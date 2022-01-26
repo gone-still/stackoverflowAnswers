@@ -1,6 +1,15 @@
+# File        :   main.py (Corner Detection via Convex Hull)
+# Version     :   1.0.0
+# Description :   Script that recognizes the four corners of a page under un-even brightness.
+#                 Answer for: https://stackoverflow.com/questions/67644977/recognizing-corners-page-with-opencv-partialy-fails/67645614
+# Date:       :   Jan 25, 2022
+# Author      :   Ricardo Acevedo-Avila (racevedoaa@gmail.com)
+# License     :   Creative Commons CC0
+
 # imports:
-import numpy as np
 import cv2
+import numpy as np
+
 
 # Defines a re-sizable image window:
 def showImage(imageName, inputImage):
@@ -8,88 +17,87 @@ def showImage(imageName, inputImage):
     cv2.imshow(imageName, inputImage)
     cv2.waitKey(0)
 
-# Writes an PGN image:
-def writeImage(imagePath, inputImage):
-    imagePath = imagePath + ".png"
-    cv2.imwrite(imagePath, inputImage, [cv2.IMWRITE_PNG_COMPRESSION, 0])
-    print("Wrote Image: " + imagePath)
 
 # image path
 path = "D://opencvImages//"
-fileName = "mx8lW.jpg"
+fileName = "page01.jpg"
 
 # Reading an image in default mode:
 inputImage = cv2.imread(path + fileName)
+
+# Deep copy for results:
 inputImageCopy = inputImage.copy()
 
-# Convert RGB to grayscale:
-grayscaleImage = cv2.cvtColor(inputImage, cv2.COLOR_BGR2GRAY)
+# Convert BGR to grayscale:
+grayInput = cv2.cvtColor(inputImageCopy, cv2.COLOR_BGR2GRAY)
 
-showImage("grayscaleImage", grayscaleImage)
+# Threshold via Otsu:
+_, binaryImage = cv2.threshold(grayInput, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-# Crop ROI
-(imageHeight, imageWidth) = grayscaleImage.shape[:2]
-roiX = 0
-roiY = int(0.05 * imageHeight)
-roiWidth = imageWidth
-roiHeight = int(0.05 * imageHeight)
+# Get edges:
+cannyImage = cv2.Canny(binaryImage, threshold1=120, threshold2=255, edges=1)
 
-color = (0, 255, 0)
-cv2.rectangle(inputImageCopy, (int(roiX), int(roiY)), (int(roiX + roiWidth), int(roiY + roiHeight)), color, 5)
-showImage("inputImageCopy", inputImageCopy)
+# Find the EXTERNAL contours on the binary image:
+contours, hierarchy = cv2.findContours(cannyImage, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-writeImage(path+"pageRectangle", inputImageCopy)
+# Store the corners:
+cornerList = []
 
-imageRoi = grayscaleImage[roiY:roiY+roiHeight, roiX:roiWidth]
+# Look for the outer bounding boxes (no children):
+for i, c in enumerate(contours):
 
-showImage("ImageROI", imageRoi)
+    # Approximate the contour to a polygon:
+    contoursPoly = cv2.approxPolyDP(c, 3, True)
 
-writeImage(path+"pageRoi", imageRoi)
+    # Convert the polygon to a bounding rectangle:
+    boundRect = cv2.boundingRect(contoursPoly)
 
-# Thresholding:
-_, binaryImage = cv2.threshold(imageRoi, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # Get the bounding rect's data:
+    rectX = boundRect[0]
+    rectY = boundRect[1]
+    rectWidth = boundRect[2]
+    rectHeight = boundRect[3]
 
-showImage("binaryImage", binaryImage)
-writeImage(path+"binaryPage", binaryImage)
+    # Estimate the bounding rect area:
+    rectArea = rectWidth * rectHeight
 
-# Reduce the ROI to a n row x 1 columns matrix:
-reducedImg = cv2.reduce(binaryImage, 0, cv2.REDUCE_MAX)
+    # Set a min area threshold
+    minArea = 100000
 
-showImage("reducedImg", reducedImg)
-writeImage(path+"pageReduced", reducedImg)
+    # Filter blobs by area:
+    if rectArea > minArea:
 
-# Store the transition positions here:
-linePositions = []
+        # Get the convex hull for the target contour:
+        hull = cv2.convexHull(c)
+        # (Optional) Draw the hull:
+        color = (0, 0, 255)
+        cv2.polylines(inputImageCopy, [hull], True, color, 2)
 
-# Find transitions from 0 to 255:
-pastPixel = 255
-for x in range(reducedImg.shape[1]):
-    # Get current pixel:
-    currentPixel = reducedImg[0,x]
-    # Check for the "jumps":
-    if currentPixel == 255 and pastPixel == 0:
-        # Store the jump locations in list:
-        print("Got Jump at:"+str(x))
-        linePositions.append(x)
-    # Set current pixel to past pixel:
-    pastPixel = currentPixel
+        # Create image for good features to track:
+        (height, width) = cannyImage.shape[:2]
+        # Black image same size as original input:
+        hullImg = np.zeros((height, width), dtype=np.uint8)
 
+        # Draw the points:
+        cv2.drawContours(hullImg, [hull], 0, 255, 2)
+        showImage("hullImg", hullImg)
 
-# Crop pages:
-for i in range(len(linePositions)):
-    # Get top left:
-    cropX = linePositions[i]
+        # Set the corner detection:
+        maxCorners = 4
+        qualityLevel = 0.01
+        minDistance = int(max(height, width) / maxCorners)
 
-    # Get top left:
-    if i != len(linePositions)-1:
-        cropWidth = linePositions[i+1]
-    else:
-        cropWidth = reducedImg.shape[1]
+        # Get the corners:
+        corners = cv2.goodFeaturesToTrack(hullImg, maxCorners, qualityLevel, minDistance)
+        corners = np.int0(corners)
 
-    # Crop page:
-    cropY = 0
-    cropHeight = imageHeight
-    currentCrop = inputImage[cropY:cropHeight,cropX:cropWidth]
+        # Loop through the corner array and store/draw the corners:
+        for c in corners:
+            # Flat the array of corner points:
+            (x, y) = c.ravel()
+            # Store the corner point in the list:
+            cornerList.append((x, y))
 
-    showImage("CurrentCrop", currentCrop)
-    writeImage(path+"pagecurrentCrop"+str(i), currentCrop)
+            # (Optional) Draw the corner points:
+            cv2.circle(inputImageCopy, (x, y), 5, 255, 5)
+            showImage("corners", inputImageCopy)
