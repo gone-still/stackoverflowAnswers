@@ -1,7 +1,7 @@
 # pageDetection
 Script that recognizes the four corners of a page under uneven brightness.
 
-Answer for: https://stackoverflow.com/questions/67644977/recognizing-corners-page-with-opencv-partialy-fails/67645614
+Answer for: https://stackoverflow.com/questions/67644977/recognizing-corners-page-with-opencv-partialy-fails/
 
 |        Input Image        |Output Image             |
 ---------------------------|-------------------------------|
