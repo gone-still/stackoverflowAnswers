@@ -1,8 +1,8 @@
-# Multicolumn Splitting
+# pageDetection
 Script that splits (individually crops) a scanned page into its columns
 
 Answer for: https://stackoverflow.com/q/72309686/12728244
 
-|        Input Image        |Output Images             |
-----------------------------|---------------------------|
-|<img src="https://user-images.githubusercontent.com/8327505/169427886-9f06aa8b-a4f0-4e38-9779-207243dcdacd.jpg" width="200"/>|<img src="https://user-images.githubusercontent.com/8327505/169427894-890cb1e2-b8eb-49ef-9271-252ee68df8c8.png" width="55"/>  <img src="https://user-images.githubusercontent.com/8327505/169427899-11c76ed7-a700-40e6-ae08-76916e792799.png" width="46"/>
+|        Input Image        |Output Image             |
+---------------------------|-------------------------------|
+|![page01](https://user-images.githubusercontent.com/8327505/151108886-ac8f947b-3416-4f59-b118-9e1ad95c1010.jpg)|![page01-proc](https://user-images.githubusercontent.com/8327505/151108902-ad7f7a69-3745-4eaf-a420-66b5ecc12af6.jpg)
