@@ -1,9 +1,9 @@
 # File        :   main.py (Color Cell Location)
-# Version     :   0.5.0
+# Version     :   0.5.1
 # Description :   Script that locates color cells from a color card picture.
 #                 Partial Answer for: ???
 
-# Date:       :   Dec 26, 2023
+# Date:       :   Dec 28, 2023
 # Author      :   Ricardo Acevedo-Avila (racevedoaa@gmail.com)
 # License     :   Creative Commons CC0
 
@@ -103,7 +103,7 @@ def imageQuantization(inputImage, k, runDistanceFilter, filterParams, minDistanc
     # Convert all pixels to the color of the centroids:
     segmentedImage = centers[labels.flatten()]
     # Reshape back to the original image dimension
-    segmentedImage = segmentedImage.reshape(currentCrop.shape)
+    segmentedImage = segmentedImage.reshape(inputImage.shape)
 
     # Ready:
     return segmentedImage
